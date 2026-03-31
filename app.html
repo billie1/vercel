@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的資產與日均成本記錄</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #dcfce7 50%, #f3e8ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --primary-blue: #3b82f6;
+            --primary-green: #10b981;
+            --primary-purple: #8b5cf6;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-dark);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 { text-align: center; color: var(--primary-purple); margin-bottom: 20px; font-size: 24px; }
+
+        /* 表單區域 */
+        .form-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group > div { flex: 1; min-width: 200px; }
+        
+        label { display: block; font-size: 14px; margin-bottom: 5px; color: var(--text-light); }
+        
+        input {
+            width: 100%; padding: 10px; border: 1px solid #cbd5e1;
+            border-radius: 8px; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+        button {
+            background: var(--primary-blue); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            font-size: 16px; font-weight: bold; width: 100%; transition: 0.3s;
+        }
+        button:hover { background: #2563eb; }
+        button.update-mode { background: var(--primary-green); }
+
+        /* 總計區域 */
+        .summary {
+            display: flex; justify-content: space-between;
+            background: var(--primary-purple); color: white;
+            padding: 15px 20px; border-radius: 12px; margin-bottom: 20px;
+        }
+
+        /* 列表區域 */
+        .item-list { display: grid; gap: 15px; grid-template-columns: 1fr; }
+        @media(min-width: 600px) { .item-list { grid-template-columns: 1fr 1fr; } }
+
+        .item-card {
+            background: var(--card-bg); padding: 15px; border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative;
+            border-left: 5px solid var(--primary-green);
+        }
+
+        .item-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
+        .item-detail { font-size: 14px; color: var(--text-light); margin-bottom: 5px; }
+        .item-highlight { color: var(--primary-blue); font-weight: bold; font-size: 16px; margin-top: 10px; }
+
+        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; }
+        .btn-edit { color: var(--primary-green); cursor: pointer; font-size: 14px; }
+        .btn-delete { color: #ef4444; cursor: pointer; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>✨ 貴重物品日均成本追蹤器</h1>
+
+    <div class="summary">
+        <div>總資產價值：<strong id="totalValue">¥0</strong></div>
+        <div>記錄物品數：<strong id="totalItems">0</strong></div>
+    </div>
+
+    <div class="form-card">
+        <input type="hidden" id="editId">
+        <div class="input-group">
+            <div>
+                <label>物品名稱</label>
+                <input type="text" id="name" placeholder="例如：MacBook Pro">
+            </div>
+            <div>
+                <label>購買價格</label>
+                <input type="number" id="price" placeholder="例如：15000">
+            </div>
+            <div>
+                <label>購買日期</label>
+                <input type="date" id="date">
+            </div>
+        </div>
+        <button id="submitBtn" onclick="saveItem()">添加物品</button>
+    </div>
+
+    <div class="item-list" id="itemList">
+        <!-- 卡片會通過 JS 動態生成在這裡 -->
+    </div>
+</div>
+
+<script>
+    // 從 LocalStorage 讀取數據，如果沒有則為空數組
+    let assets = JSON.parse(localStorage.getItem('myAssets')) || [];
+
+    // 初始化設置今天日期為默認值
+    document.getElementById('date').valueAsDate = new Date();
+
+    function renderList() {
+        const listContainer = document.getElementById('itemList');
+        listContainer.innerHTML = '';
+        let totalVal = 0;
+
+        assets.forEach(item => {
+            totalVal += Number(item.price);
+            
+            // 計算天數
+            const buyDate = new Date(item.date);
+            const today = new Date();
+            const diffTime = Math.abs(today - buyDate);
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if(diffDays === 0) diffDays = 1; // 如果是今天買的，算作1天
+
+            // 計算日均
+            const dailyCost = (item.price / diffDays).toFixed(2);
+
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                <div class="action-btns">
+                    <span class="btn-edit" onclick="editItem('${item.id}')">修改</span>
+                    <span class="btn-delete" onclick="deleteItem('${item.id}')">刪除</span>
+                </div>
+                <div class="item-title">${item.name}</div>
+                <div class="item-detail">💰 價格：¥${item.price}</div>
+                <div class="item-detail">📅 購買日：${item.date}</div>
+                <div class="item-detail">⏳ 已擁有：${diffDays} 天</div>
+                <div class="item-highlight">📉 日均成本：¥${dailyCost} / 天</div>
+            `;
+            listContainer.appendChild(card);
+        });
+
+        document.getElementById('totalValue').innerText = `¥${totalVal.toFixed(2)}`;
+        document.getElementById('totalItems').innerText = assets.length;
+    }
+
+    function saveItem() {
+        const idInput = document.getElementById('editId').value;
+        const nameInput = document.getElementById('name').value;
+        const priceInput = document.getElementById('price').value;
+        const dateInput = document.getElementById('date').value;
+
+        if (!nameInput || !priceInput || !dateInput) {
+            alert("請填寫完整信息！");
+            return;
+        }
+
+        if (idInput) {
+            // 修改模式
+            const index = assets.findIndex(a => a.id === idInput);
+            assets[index] = { id: idInput, name: nameInput, price: priceInput, date: dateInput };
+            document.getElementById('submitBtn').innerText = "添加物品";
+            document.getElementById('submitBtn').classList.remove('update-mode');
+        } else {
+            // 新增模式
+            const newItem = {
+                id: Date.now().toString(), // 用時間戳當唯一ID
+                name: nameInput,
+                price: priceInput,
+                date: dateInput
+            };
+            assets.push(newItem);
+        }
+
+        // 保存並重置表單
+        localStorage.setItem('myAssets', JSON.stringify(assets));
+        document.getElementById('editId').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('date').valueAsDate = new Date();
+        
+        renderList();
+    }
+
+    function deleteItem(id) {
+        if(confirm("確定要刪除這個記錄嗎？")) {
+            assets = assets.filter(item => item.id !== id);
+            localStorage.setItem('myAssets', JSON.stringify(assets));
+            renderList();
+        }
+    }
+
+    function editItem(id) {
+        const item = assets.find(a => a.id === id);
+        if (item) {
+            document.getElementById('editId').value = item.id;
+            document.getElementById('name').value = item.name;
+            document.getElementById('price').value = item.price;
+            document.getElementById('date').value = item.date;
+            
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = "保存修改";
+            btn.classList.add('update-mode');
+            window.scrollTo(0, 0); // 滾動到頂部方便編輯
+        }
+    }
+
+    // 初次加載時渲染
+    renderList();
+</script>
+
+</body>
+</html>
