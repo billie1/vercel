@@ -1,238 +1,440 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的資產與日均成本記錄</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>惜物记 - 万物皆有价值</title>
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #dcfce7 50%, #f3e8ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --primary-blue: #3b82f6;
-            --primary-green: #10b981;
-            --primary-purple: #8b5cf6;
-            --text-dark: #1e293b;
-            --text-light: #64748b;
+            /* 仪表盘主色调 */
+            --bg-blue: #3b82f6;
+            --bg-blue-light: #60a5fa;
+            /* 卡片清新配色 */
+            --card-color-1: #e0f2fe; /* 浅蓝 */
+            --card-color-2: #dcfce7; /* 浅绿 */
+            --card-color-3: #f3e8ff; /* 浅紫 */
+            --card-color-4: #fef08a; /* 浅黄 */
+            
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --bg-page: #f8fafc;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         
-        body {
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: var(--text-dark);
-            padding: 20px;
+        body { background-color: #e2e8f0; display: flex; justify-content: center; }
+
+        /* 模拟手机屏幕 */
+        .app-container {
+            width: 100%; max-width: 480px; background-color: var(--bg-page);
+            min-height: 100vh; position: relative; padding-bottom: 90px; box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        /* 顶部标题栏 */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 20px 10px 20px; font-size: 22px; font-weight: 800; color: var(--text-main);
+            letter-spacing: 1px;
         }
+        .header-sub { font-size: 12px; color: var(--text-sub); font-weight: normal; margin-left: 8px; letter-spacing: 0; }
 
-        h1 { text-align: center; color: var(--primary-purple); margin-bottom: 20px; font-size: 24px; }
-
-        /* 表單區域 */
-        .form-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
+        /* 数据仪表盘 (蓝色卡片) */
+        .dashboard {
+            background: linear-gradient(135deg, var(--bg-blue), var(--bg-blue-light));
+            margin: 10px 20px 20px 20px; border-radius: 20px; padding: 20px; color: white;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
         }
-
-        .input-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .input-group > div { flex: 1; min-width: 200px; }
+        .dash-top { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 15px; }
+        .dash-top-item { flex: 1; text-align: center; }
+        .dash-top-item span { font-size: 14px; opacity: 0.9; }
+        .dash-top-item strong { display: block; font-size: 24px; margin-top: 5px; }
         
-        label { display: block; font-size: 14px; margin-bottom: 5px; color: var(--text-light); }
-        
-        input {
-            width: 100%; padding: 10px; border: 1px solid #cbd5e1;
-            border-radius: 8px; outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .dash-bottom { display: flex; justify-content: space-between; }
+        .dash-bottom-item { flex: 1; text-align: center; }
+        .dash-bottom-item span { font-size: 12px; opacity: 0.8; }
+        .dash-bottom-item strong { display: block; font-size: 16px; margin-top: 5px; font-weight: 600;}
 
-        button {
-            background: var(--primary-blue); color: white; border: none;
-            padding: 10px 20px; border-radius: 8px; cursor: pointer;
-            font-size: 16px; font-weight: bold; width: 100%; transition: 0.3s;
-        }
-        button:hover { background: #2563eb; }
-        button.update-mode { background: var(--primary-green); }
-
-        /* 總計區域 */
-        .summary {
-            display: flex; justify-content: space-between;
-            background: var(--primary-purple); color: white;
-            padding: 15px 20px; border-radius: 12px; margin-bottom: 20px;
+        /* 控制栏 (筛选与排序) */
+        .controls { margin: 0 20px 20px 20px; display: flex; gap: 10px; }
+        .controls select {
+            flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid #cbd5e1;
+            background: white; font-size: 13px; color: var(--text-main); outline: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); appearance: none;
         }
 
-        /* 列表區域 */
-        .item-list { display: grid; gap: 15px; grid-template-columns: 1fr; }
-        @media(min-width: 600px) { .item-list { grid-template-columns: 1fr 1fr; } }
-
+        /* 物品列表 */
+        .item-list { padding: 0 20px; display: flex; flex-direction: column; gap: 15px; }
         .item-card {
-            background: var(--card-bg); padding: 15px; border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative;
-            border-left: 5px solid var(--primary-green);
+            display: flex; align-items: center; padding: 15px; border-radius: 16px;
+            cursor: pointer; transition: transform 0.1s; position: relative;
         }
+        .item-card:active { transform: scale(0.98); }
+        
+        .item-icon {
+            width: 50px; height: 50px; background: rgba(255,255,255,0.5);
+            border-radius: 12px; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; margin-right: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .item-info { flex: 1; }
+        .item-title { font-size: 16px; font-weight: bold; color: var(--text-main); margin-bottom: 4px; }
+        .item-stats { font-size: 13px; color: var(--text-sub); margin-bottom: 4px; }
+        .item-date { font-size: 12px; color: #94a3b8; }
+        
+        .item-days { text-align: right; }
+        .item-days-num { font-size: 18px; font-weight: bold; color: var(--text-main); }
+        .item-days-label { font-size: 12px; color: var(--text-sub); }
 
-        .item-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--text-dark); }
-        .item-detail { font-size: 14px; color: var(--text-light); margin-bottom: 5px; }
-        .item-highlight { color: var(--primary-blue); font-weight: bold; font-size: 16px; margin-top: 10px; }
+        /* 空状态提示 */
+        .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 14px; display: none; }
 
-        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px; }
-        .btn-edit { color: var(--primary-green); cursor: pointer; font-size: 14px; }
-        .btn-delete { color: #ef4444; cursor: pointer; font-size: 14px; }
+        /* 底部导航栏 (极简中间加号) */
+        .tab-bar {
+            position: fixed; bottom: 0; width: 100%; max-width: 480px; height: 80px;
+            background: linear-gradient(to top, rgba(248, 250, 252, 1) 60%, rgba(248, 250, 252, 0));
+            display: flex; justify-content: center; align-items: center; pointer-events: none;
+        }
+        .add-btn {
+            width: 56px; height: 56px; background: var(--text-main); color: white;
+            border-radius: 28px; display: flex; justify-content: center; align-items: center;
+            font-size: 32px; box-shadow: 0 6px 16px rgba(30, 41, 59, 0.3); cursor: pointer;
+            pointer-events: auto; transition: transform 0.2s; margin-bottom: 10px;
+        }
+        .add-btn:active { transform: scale(0.9); }
+
+        /* 弹窗表单 (Modal) */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-end;
+            z-index: 10; border-radius: inherit;
+        }
+        .modal-content {
+            background: white; width: 100%; border-radius: 20px 20px 0 0;
+            padding: 25px 20px 40px 20px; animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 18px; font-weight: bold; }
+        .close-btn { font-size: 28px; color: #94a3b8; cursor: pointer; line-height: 1; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 5px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid #e2e8f0;
+            border-radius: 10px; font-size: 15px; outline: none; background: #f8fafc;
+        }
+        .form-group input:focus { border-color: var(--bg-blue); }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 25px; }
+        .btn-save { flex: 2; background: var(--bg-blue); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-delete { flex: 1; background: #fee2e2; color: #ef4444; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; display: none; }
+
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>✨ 貴重物品日均成本追蹤器</h1>
-
-    <div class="summary">
-        <div>總資產價值：<strong id="totalValue">¥0</strong></div>
-        <div>記錄物品數：<strong id="totalItems">0</strong></div>
+<div class="app-container">
+    <div class="header">
+        <div>惜物记<span class="header-sub">物尽其用，时间看得见</span></div>
     </div>
 
-    <div class="form-card">
-        <input type="hidden" id="editId">
-        <div class="input-group">
-            <div>
-                <label>物品名稱</label>
-                <input type="text" id="name" placeholder="例如：MacBook Pro">
+    <!-- 数据仪表盘 -->
+    <div class="dashboard">
+        <div class="dash-top">
+            <div class="dash-top-item">
+                <span>总物品价值</span>
+                <strong id="totalValue">¥0.00</strong>
             </div>
-            <div>
-                <label>購買價格</label>
-                <input type="number" id="price" placeholder="例如：15000">
-            </div>
-            <div>
-                <label>購買日期</label>
-                <input type="date" id="date">
+            <div class="dash-top-item">
+                <span>总日均</span>
+                <strong id="totalDaily">¥0.00</strong>
             </div>
         </div>
-        <button id="submitBtn" onclick="saveItem()">添加物品</button>
+        <div class="dash-bottom">
+            <div class="dash-bottom-item">
+                <span>物品数量</span>
+                <strong id="totalCount">0</strong>
+            </div>
+            <div class="dash-bottom-item">
+                <span>最高日均</span>
+                <strong id="maxDaily">¥0.00</strong>
+            </div>
+            <div class="dash-bottom-item">
+                <span>最低日均</span>
+                <strong id="minDaily">¥0.00</strong>
+            </div>
+        </div>
     </div>
 
+    <!-- 控制栏 (新增分类筛选) -->
+    <div class="controls">
+        <select id="categoryFilter" onchange="renderList()">
+            <option value="all">📁 全部分类</option>
+            <option value="💻">💻 电子数码</option>
+            <option value="📱">📱 手机通讯</option>
+            <option value="📺">📺 家用电器</option>
+            <option value="🚗">🚗 交通工具</option>
+            <option value="👗">👗 服饰鞋包</option>
+            <option value="⌚">⌚ 珠宝手表</option>
+            <option value="🛋️">🛋️ 居家日用</option>
+            <option value="📦">📦 其他物品</option>
+        </select>
+        
+        <select id="sortSelect" onchange="renderList()">
+            <option value="dateDesc">⏳ 最新添加优先</option>
+            <option value="dailyDesc">📉 日均最高优先</option>
+            <option value="priceDesc">💰 总价最高优先</option>
+        </select>
+    </div>
+
+    <!-- 物品列表 -->
     <div class="item-list" id="itemList">
-        <!-- 卡片會通過 JS 動態生成在這裡 -->
+        <!-- JS 动态生成 -->
+    </div>
+    <div class="empty-state" id="emptyState">
+        暂无记录，点击底部 "+" 开始惜物之旅吧 ✨
+    </div>
+
+    <!-- 底部极简按钮 -->
+    <div class="tab-bar">
+        <div class="add-btn" onclick="openModal()">+</div>
+    </div>
+
+    <!-- 弹窗表单 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">添加新物品</div>
+                <div class="close-btn" onclick="closeModal()">×</div>
+            </div>
+            
+            <input type="hidden" id="editId">
+            
+            <div class="form-group">
+                <label>所属分类 (用于生成图标与筛选)</label>
+                <select id="category">
+                    <option value="💻">💻 电子数码</option>
+                    <option value="📱">📱 手机通讯</option>
+                    <option value="📺">📺 家用电器</option>
+                    <option value="🚗">🚗 交通工具</option>
+                    <option value="👗">👗 服饰鞋包</option>
+                    <option value="⌚">⌚ 珠宝手表</option>
+                    <option value="🛋️">🛋️ 居家日用</option>
+                    <option value="📦">📦 其他物品</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>物品名称</label>
+                <input type="text" id="name" placeholder="例如：MacBook Pro 14">
+            </div>
+            <div class="form-group">
+                <label>购入价格 (¥)</label>
+                <input type="number" id="price" placeholder="例如：14799">
+            </div>
+            <div class="form-group">
+                <label>购入日期</label>
+                <input type="date" id="date">
+            </div>
+            
+            <div class="btn-row">
+                <button class="btn-delete" id="deleteBtn" onclick="deleteItem()">删除</button>
+                <button class="btn-save" onclick="saveItem()">保存记录</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // 從 LocalStorage 讀取數據，如果沒有則為空數組
-    let assets = JSON.parse(localStorage.getItem('myAssets')) || [];
+    // 数据存储 (换了新名字前缀，防冲突)
+    let assets = JSON.parse(localStorage.getItem('xiwu_assets')) || [];
+    
+    // 卡片背景色循环池 (浅蓝, 浅绿, 浅紫, 浅黄)
+    const cardColors = ['var(--card-color-1)', 'var(--card-color-2)', 'var(--card-color-3)', 'var(--card-color-4)'];
 
-    // 初始化設置今天日期為默認值
-    document.getElementById('date').valueAsDate = new Date();
-
-    function renderList() {
-        const listContainer = document.getElementById('itemList');
-        listContainer.innerHTML = '';
-        let totalVal = 0;
-
-        assets.forEach(item => {
-            totalVal += Number(item.price);
-            
-            // 計算天數
-            const buyDate = new Date(item.date);
-            const today = new Date();
-            const diffTime = Math.abs(today - buyDate);
-            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if(diffDays === 0) diffDays = 1; // 如果是今天買的，算作1天
-
-            // 計算日均
-            const dailyCost = (item.price / diffDays).toFixed(2);
-
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.innerHTML = `
-                <div class="action-btns">
-                    <span class="btn-edit" onclick="editItem('${item.id}')">修改</span>
-                    <span class="btn-delete" onclick="deleteItem('${item.id}')">刪除</span>
-                </div>
-                <div class="item-title">${item.name}</div>
-                <div class="item-detail">💰 價格：¥${item.price}</div>
-                <div class="item-detail">📅 購買日：${item.date}</div>
-                <div class="item-detail">⏳ 已擁有：${diffDays} 天</div>
-                <div class="item-highlight">📉 日均成本：¥${dailyCost} / 天</div>
-            `;
-            listContainer.appendChild(card);
-        });
-
-        document.getElementById('totalValue').innerText = `¥${totalVal.toFixed(2)}`;
-        document.getElementById('totalItems').innerText = assets.length;
+    // 计算天数
+    function getDays(dateStr) {
+        const buyDate = new Date(dateStr);
+        // 清除时间的影响，只算日期
+        buyDate.setHours(0,0,0,0);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const diffTime = today.getTime() - buyDate.getTime();
+        let days = Math.floor(diffTime / (1000 * 3600 * 24));
+        return days > 0 ? days : 1; // 至少算1天
     }
 
+    // 格式化货币
+    function formatMoney(num) {
+        return Number(num).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+    }
+
+    // 主渲染逻辑
+    function renderList() {
+        const listContainer = document.getElementById('itemList');
+        const emptyState = document.getElementById('emptyState');
+        listContainer.innerHTML = '';
+        
+        let totalVal = 0;
+        let totalDaily = 0;
+        let dailyArr = [];
+
+        // 获取筛选和排序条件
+        const filterType = document.getElementById('categoryFilter').value;
+        const sortType = document.getElementById('sortSelect').value;
+        
+        let displayAssets = [...assets];
+
+        // 1. 先进行分类筛选
+        if (filterType !== 'all') {
+            displayAssets = displayAssets.filter(item => item.category === filterType);
+        }
+
+        // 计算每一项的动态属性
+        displayAssets.forEach(item => {
+            item.days = getDays(item.date);
+            item.dailyCost = item.price / item.days;
+        });
+
+        // 2. 再进行排序
+        if(sortType === 'dailyDesc') {
+            displayAssets.sort((a, b) => b.dailyCost - a.dailyCost);
+        } else if(sortType === 'priceDesc') {
+            displayAssets.sort((a, b) => b.price - a.price);
+        } else {
+            // 默认按 ID(时间戳) 倒序，即最新添加
+            displayAssets.sort((a, b) => b.id - a.id); 
+        }
+
+        // 渲染列表并计算总计（此时总计是根据筛选后的数据计算的）
+        if (displayAssets.length === 0) {
+            emptyState.style.display = 'block';
+        } else {
+            emptyState.style.display = 'none';
+            displayAssets.forEach((item, index) => {
+                totalVal += Number(item.price);
+                totalDaily += item.dailyCost;
+                dailyArr.push(item.dailyCost);
+
+                const bgColor = cardColors[index % cardColors.length];
+
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.style.backgroundColor = bgColor;
+                card.onclick = () => openModal(item.id);
+                
+                card.innerHTML = `
+                    <div class="item-icon">${item.category || '📦'}</div>
+                    <div class="item-info">
+                        <div class="item-title">${item.name}</div>
+                        <div class="item-stats">总价 ¥${formatMoney(item.price)} · 日均 ¥${formatMoney(item.dailyCost)}</div>
+                        <div class="item-date">${item.date} 购入</div>
+                    </div>
+                    <div class="item-days">
+                        <div class="item-days-num">${item.days}</div>
+                        <div class="item-days-label">陪伴天数</div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        // 3. 更新仪表盘数据
+        document.getElementById('totalValue').innerText = `¥${formatMoney(totalVal)}`;
+        document.getElementById('totalDaily').innerText = `¥${formatMoney(totalDaily)}`;
+        document.getElementById('totalCount').innerText = displayAssets.length;
+        
+        if (dailyArr.length > 0) {
+            document.getElementById('maxDaily').innerText = `¥${formatMoney(Math.max(...dailyArr))}`;
+            document.getElementById('minDaily').innerText = `¥${formatMoney(Math.min(...dailyArr))}`;
+        } else {
+            document.getElementById('maxDaily').innerText = '¥0.0';
+            document.getElementById('minDaily').innerText = '¥0.0';
+        }
+    }
+
+    // 弹窗控制
+    const modal = document.getElementById('modalOverlay');
+    
+    function openModal(id = null) {
+        modal.style.display = 'flex';
+        
+        if (id) {
+            const item = assets.find(a => a.id == id);
+            document.getElementById('modalTitle').innerText = '编辑物品记录';
+            document.getElementById('editId').value = item.id;
+            document.getElementById('name').value = item.name;
+            document.getElementById('price').value = item.price;
+            document.getElementById('date').value = item.date;
+            document.getElementById('category').value = item.category || '💻';
+            document.getElementById('deleteBtn').style.display = 'block';
+        } else {
+            document.getElementById('modalTitle').innerText = '添加新物品';
+            document.getElementById('editId').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('date').valueAsDate = new Date();
+            // 默认选中当前筛选的分类（如果不是“全部”的话）
+            const currentFilter = document.getElementById('categoryFilter').value;
+            document.getElementById('category').value = currentFilter === 'all' ? '💻' : currentFilter;
+            document.getElementById('deleteBtn').style.display = 'none';
+        }
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    // 保存逻辑
     function saveItem() {
         const idInput = document.getElementById('editId').value;
         const nameInput = document.getElementById('name').value;
         const priceInput = document.getElementById('price').value;
         const dateInput = document.getElementById('date').value;
+        const categoryInput = document.getElementById('category').value;
 
         if (!nameInput || !priceInput || !dateInput) {
-            alert("請填寫完整信息！");
+            alert("请完整填写物品名称、价格和日期！");
             return;
         }
 
         if (idInput) {
-            // 修改模式
-            const index = assets.findIndex(a => a.id === idInput);
-            assets[index] = { id: idInput, name: nameInput, price: priceInput, date: dateInput };
-            document.getElementById('submitBtn').innerText = "添加物品";
-            document.getElementById('submitBtn').classList.remove('update-mode');
+            const index = assets.findIndex(a => a.id == idInput);
+            assets[index] = { ...assets[index], name: nameInput, price: priceInput, date: dateInput, category: categoryInput };
         } else {
-            // 新增模式
-            const newItem = {
-                id: Date.now().toString(), // 用時間戳當唯一ID
+            assets.push({
+                id: Date.now(),
                 name: nameInput,
                 price: priceInput,
-                date: dateInput
-            };
-            assets.push(newItem);
+                date: dateInput,
+                category: categoryInput
+            });
         }
 
-        // 保存並重置表單
-        localStorage.setItem('myAssets', JSON.stringify(assets));
-        document.getElementById('editId').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('price').value = '';
-        document.getElementById('date').valueAsDate = new Date();
-        
+        localStorage.setItem('xiwu_assets', JSON.stringify(assets));
+        closeModal();
         renderList();
     }
 
-    function deleteItem(id) {
-        if(confirm("確定要刪除這個記錄嗎？")) {
-            assets = assets.filter(item => item.id !== id);
-            localStorage.setItem('myAssets', JSON.stringify(assets));
+    // 删除逻辑
+    function deleteItem() {
+        const idInput = document.getElementById('editId').value;
+        if(confirm("确定要删除这条记录吗？删除后无法恢复。")) {
+            assets = assets.filter(item => item.id != idInput);
+            localStorage.setItem('xiwu_assets', JSON.stringify(assets));
+            closeModal();
             renderList();
         }
     }
 
-    function editItem(id) {
-        const item = assets.find(a => a.id === id);
-        if (item) {
-            document.getElementById('editId').value = item.id;
-            document.getElementById('name').value = item.name;
-            document.getElementById('price').value = item.price;
-            document.getElementById('date').value = item.date;
-            
-            const btn = document.getElementById('submitBtn');
-            btn.innerText = "保存修改";
-            btn.classList.add('update-mode');
-            window.scrollTo(0, 0); // 滾動到頂部方便編輯
+    // 点击背景阴影关闭弹窗
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeModal();
         }
     }
 
-    // 初次加載時渲染
+    // 初次加载
     renderList();
 </script>
 
